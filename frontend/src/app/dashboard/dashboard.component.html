@@ -1,0 +1,111 @@
+<div class="dashboard-wrapper">
+  <!-- Top Bar -->
+  <header class="top-bar glass-panel">
+    <div class="logo">
+      <span class="logo-icon">✨</span> CodeTracker
+    </div>
+    <div class="search-container">
+      <input type="text" placeholder="Search students..." (input)="onSearch($event)" class="search-input">
+      <span class="search-icon">🔍</span>
+    </div>
+    <div class="timestamp">
+      Updated: {{ lastUpdated | date:'shortTime' }}
+    </div>
+  </header>
+
+  <!-- Summary Cards -->
+  <section class="summary-cards">
+    <div class="card glass-panel glow-blue">
+      <div class="card-icon">👥</div>
+      <div class="card-content">
+        <h3>Total Active Students</h3>
+        <p class="metric-value">{{ metrics().active }}</p>
+      </div>
+    </div>
+    <div class="card glass-panel glow-purple">
+      <div class="card-icon">🔥</div>
+      <div class="card-content">
+        <h3>Highest Current Streak</h3>
+        <p class="metric-value">{{ metrics().highestStreak }} <span>days</span></p>
+      </div>
+    </div>
+    <div class="card glass-panel glow-cyan">
+      <div class="card-icon">💻</div>
+      <div class="card-content">
+        <h3>Solved This Week</h3>
+        <p class="metric-value">{{ metrics().solvedThisWeek }}</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="main-content">
+    <!-- Main Leaderboard -->
+    <section class="leaderboard-section glass-panel">
+      <h2 class="section-title">Global Leaderboard</h2>
+      <div class="table-responsive">
+        <table class="leaderboard-table">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th (click)="sortBy('name')" class="sortable">Student Name</th>
+              <th (click)="sortBy('leetcodeStreak')" class="sortable">LeetCode Streak</th>
+              <th (click)="sortBy('codechefRating')" class="sortable">CodeChef Rating</th>
+              <th (click)="sortBy('totalSolved')" class="sortable">Total Solved</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let student of filteredAndSortedStudents()" class="table-row">
+              <td class="rank-cell">
+                <span class="rank-badge" [class.top-3]="student.rank <= 3">#{{ student.rank }}</span>
+              </td>
+              <td class="name-cell">{{ student.name }}</td>
+              <td>
+                <div class="streak-badge" [class.hot]="student.leetcodeStreak > 30">
+                  <span *ngIf="student.leetcodeStreak > 30">🔥</span> {{ student.leetcodeStreak }} days
+                </div>
+              </td>
+              <td class="rating-cell">{{ student.codechefRating }}</td>
+              <td class="solved-cell">{{ student.totalSolved }}</td>
+            </tr>
+            <tr *ngIf="filteredAndSortedStudents().length === 0">
+              <td colspan="5" class="empty-state">No students found.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Side Panel -->
+    <aside class="side-panel glass-panel">
+      <h2 class="section-title">Top 5 Solvers</h2>
+      <div class="chart-container">
+        <div class="bar-chart-item" *ngFor="let top of top5Students(); let i = index">
+          <div class="bar-label">
+            <span>{{ top.name }}</span>
+            <span class="bar-value">{{ top.totalSolved }}</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar-fill" [style.width.%]="(top.totalSolved / top5Students()[0].totalSolved) * 100" 
+                 [style.animation-delay.ms]="i * 150"></div>
+          </div>
+        </div>
+      </div>
+      
+      <h2 class="section-title mt-4">Recent Activity</h2>
+      <ul class="activity-feed">
+        <li class="activity-item">
+          <span class="activity-dot blue"></span>
+          <p><strong>Diana Prince</strong> solved 5 Hard problems.</p>
+        </li>
+        <li class="activity-item">
+          <span class="activity-dot purple"></span>
+          <p><strong>Alice Chen</strong> reached a 45-day streak!</p>
+        </li>
+        <li class="activity-item">
+          <span class="activity-dot cyan"></span>
+          <p><strong>Bob Smith</strong> participated in CodeChef Starters.</p>
+        </li>
+      </ul>
+    </aside>
+  </div>
+</div>

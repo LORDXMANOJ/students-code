@@ -1,0 +1,24 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+}
+
+model Student {
+  id             Int         @id @default(autoincrement())
+  name           String
+  leetcodeHandle String?     @unique
+  codechefHandle String?     @unique
+  dailyStats     DailyStat[]
+}
+
+model DailyStat {
+  id          Int      @id @default(autoincrement())
+  studentId   Int
+  date        DateTime @default(now())
+  streak      Int      @default(0)
+  totalSolved Int      @default(0)
+  student     Student  @relation(fields: [studentId], references: [id])
+}
