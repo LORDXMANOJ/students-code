@@ -1,5 +1,6 @@
 import { Component, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { liveStudentsData } from './students.data';
 
 interface StudentData {
   id: number;
@@ -17,7 +18,8 @@ interface StudentData {
   styleUrls: ['./dashboard.component.css']
 })
 export class DashboardComponent {
-  students = signal<StudentData[]>([]);
+  // Trigger rebuild to find students.data.ts
+  students = signal<StudentData[]>(liveStudentsData);
 
   searchQuery = signal('');
   lastUpdated = new Date();
