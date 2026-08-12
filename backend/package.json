@@ -1,5 +1,5 @@
 {
-  "name": "backend",
+  "name": "code-tracker",
   "version": "1.0.0",
   "description": "CodeTracker Desktop Application",
   "main": "electron-main.js",
@@ -42,9 +42,16 @@
     },
     "win": {
       "target": [
-        "portable",
-        "nsis"
+        "nsis",
+        "portable"
       ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "CodeTracker"
     },
     "files": [
       "dist/**/*",
