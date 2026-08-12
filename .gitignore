@@ -6,13 +6,7 @@ dist/
 dist-app/
 public/
 frontend/dist/
-
-# Executables & Binaries
-*.exe
-*.dll
-*.7z
-*.pak
-*.bin
+backend/dist/
 
 # Environment & Logs
 .env
