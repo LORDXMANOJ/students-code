@@ -247,37 +247,24 @@ app.delete('/api/students/:id', async (req, res) => {
   }
 });
 
-// Serve static frontend files
-let publicPath: string;
-if (process.env.PUBLIC_PATH && fs.existsSync(path.join(process.env.PUBLIC_PATH, 'index.html'))) {
-  publicPath = process.env.PUBLIC_PATH;
-} else if (fs.existsSync(path.join(__dirname, 'public', 'index.html'))) {
-  publicPath = path.join(__dirname, 'public');
-} else {
-  publicPath = path.join(__dirname, '..', 'public');
+// Serve static frontend files (if frontend is built and copied)
+const publicPath = path.join(__dirname, 'public');
+if (fs.existsSync(path.join(publicPath, 'index.html'))) {
+  app.use(express.static(publicPath));
+  app.use((req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(publicPath, 'index.html'));
+  });
 }
-console.log('Serving static files from:', publicPath);
-console.log('index.html found:', fs.existsSync(path.join(publicPath, 'index.html')));
-app.use(express.static(publicPath));
-
-// SPA routing fallback using middleware
-app.use((req, res, next) => {
-  if (req.path.startsWith('/api')) {
-    return next();
-  }
-  res.sendFile(path.join(publicPath, 'index.html'));
-});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
-  // Only auto-open browser when NOT inside Electron
-  if (!(process as any).versions.electron) {
-    const url = `http://localhost:${PORT}`;
-    const startCmd = process.platform === 'win32' ? `start ${url}` : process.platform === 'darwin' ? `open ${url}` : `xdg-open ${url}`;
-    exec(startCmd, (err) => {
-      if (err) console.error('Could not open browser automatically:', err.message);
-    });
-  }
+  // Automatically open browser on startup
+  const url = `http://localhost:${PORT}`;
+  const startCmd = process.platform === 'win32' ? `start ${url}` : process.platform === 'darwin' ? `open ${url}` : `xdg-open ${url}`;
+  exec(startCmd, (err) => {
+    if (err) console.error('Could not open browser automatically:', err.message);
+  });
 });
 setInterval(() => {}, 100000);

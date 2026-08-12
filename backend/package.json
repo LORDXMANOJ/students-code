@@ -1,14 +1,10 @@
 {
   "name": "code-tracker",
   "version": "1.0.0",
-  "description": "CodeTracker Desktop Application",
-  "main": "electron-main.js",
+  "description": "CodeTracker Web Application Backend",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "server": "npx tsx server.ts",
-    "build-all": "node build-app.js",
-    "electron-dev": "npm run build-all && electron .",
-    "dist": "npm run build-all && electron-builder"
+    "server": "npx tsx server.ts"
   },
   "keywords": [],
   "author": "CodeTracker",
@@ -19,8 +15,6 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^26.2.0",
-    "electron": "^43.4.0",
-    "electron-builder": "^26.15.3",
     "prisma": "^7.9.1",
     "ts-node": "^10.9.2",
     "typescript": "^7.0.2"
@@ -33,35 +27,5 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1"
-  },
-  "build": {
-    "appId": "com.codetracker.app",
-    "productName": "CodeTracker",
-    "directories": {
-      "output": "dist-app"
-    },
-    "win": {
-      "target": [
-        "nsis",
-        "portable"
-      ]
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true,
-      "shortcutName": "CodeTracker"
-    },
-    "files": [
-      "dist/**/*",
-      "electron-main.js",
-      "students.json",
-      "dev.db",
-      "public/**/*",
-      "node_modules/better-sqlite3/**/*"
-    ],
-    "asar": false,
-    "publish": null
   }
 }
