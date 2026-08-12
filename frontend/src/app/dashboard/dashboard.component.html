@@ -1,12 +1,17 @@
-<div class="dashboard-wrapper">
+<div class="dashboard-container">
   <!-- Top Bar -->
-  <header class="top-bar glass-panel">
+  <header class="top-bar">
     <div class="logo">
-      <span class="logo-icon">✨</span> CodeTracker
+      <span class="icon">✨</span>
+      <h1>CodeTracker</h1>
     </div>
     <div class="search-container">
-      <input type="text" placeholder="Search students..." (input)="onSearch($event)" class="search-input">
-      <span class="search-icon">🔍</span>
+      <input 
+        type="text" 
+        placeholder="Search students..." 
+        [ngModel]="searchQuery()" 
+        (ngModelChange)="searchQuery.set($event)"
+      >
     </div>
     <div class="timestamp">
       Updated: {{ lastUpdated | date:'shortTime' }}
@@ -15,97 +20,124 @@
 
   <!-- Summary Cards -->
   <section class="summary-cards">
-    <div class="card glass-panel glow-blue">
-      <div class="card-icon">👥</div>
+    <div class="card">
+      <div class="card-icon blue">👥</div>
       <div class="card-content">
-        <h3>Total Active Students</h3>
-        <p class="metric-value">{{ metrics().active }}</p>
+        <span class="label">TOTAL ACTIVE STUDENTS</span>
+        <span class="value">{{ totalActive() }}</span>
       </div>
     </div>
-    <div class="card glass-panel glow-purple">
-      <div class="card-icon">🔥</div>
+    <div class="card">
+      <div class="card-icon orange">🔥</div>
       <div class="card-content">
-        <h3>Highest Current Streak</h3>
-        <p class="metric-value">{{ metrics().highestStreak }} <span>days</span></p>
+        <span class="label">HIGHEST CURRENT STREAK</span>
+        <span class="value">{{ highestStreak() }} <span class="sub">days</span></span>
       </div>
     </div>
-    <div class="card glass-panel glow-cyan">
-      <div class="card-icon">💻</div>
+    <div class="card">
+      <div class="card-icon purple">💻</div>
       <div class="card-content">
-        <h3>Solved This Week</h3>
-        <p class="metric-value">{{ metrics().solvedThisWeek }}</p>
+        <span class="label">TOTAL SOLVED ALL</span>
+        <span class="value">{{ totalSolvedCombined() }}</span>
       </div>
     </div>
   </section>
 
-  <div class="main-content">
-    <!-- Main Leaderboard -->
-    <section class="leaderboard-section glass-panel">
-      <h2 class="section-title">Global Leaderboard</h2>
-      <div class="table-responsive">
-        <table class="leaderboard-table">
+  <!-- Main Content -->
+  <main class="main-content">
+    
+    <!-- Add Student Form -->
+    <div class="add-student-section" *ngIf="showAddStudentForm()">
+      <h2>Add New Student</h2>
+      <div class="form-container">
+        <input type="text" placeholder="Full Name (Required)" [(ngModel)]="newStudent.name">
+        <input type="text" placeholder="LeetCode Profile URL (Required)" [(ngModel)]="newStudent.leetcodeLink">
+        <input type="text" placeholder="CodeChef Profile URL (Optional)" [(ngModel)]="newStudent.codechefLink">
+        <button class="primary-btn" (click)="addStudent()" [disabled]="isAdding()">
+          {{ isAdding() ? 'Adding...' : 'Save Student' }}
+        </button>
+        <button class="secondary-btn" (click)="toggleAddForm()">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Edit Student Form -->
+    <div class="edit-student-section" *ngIf="showEditStudentForm()">
+      <h2>Edit Student Details</h2>
+      <div class="form-container">
+        <input type="text" placeholder="Full Name (Required)" [(ngModel)]="editingStudent.name">
+        <input type="text" placeholder="LeetCode Profile URL (Required)" [(ngModel)]="editingStudent.leetcodeLink">
+        <input type="text" placeholder="CodeChef Profile URL (Optional)" [(ngModel)]="editingStudent.codechefLink">
+        <button class="primary-btn" (click)="updateStudent()" [disabled]="isSaving()">
+          {{ isSaving() ? 'Saving...' : 'Update Details' }}
+        </button>
+        <button class="secondary-btn" (click)="closeEditForm()">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Leaderboard Section -->
+    <section class="leaderboard-panel">
+      <div class="panel-header">
+        <h2>Global Leaderboard</h2>
+        <button class="primary-btn sm" (click)="toggleAddForm()" *ngIf="!showAddStudentForm() && !showEditStudentForm()">
+          + Add New Student
+        </button>
+      </div>
+      
+      <div class="table-container">
+        <table>
           <thead>
             <tr>
-              <th>Rank</th>
-              <th (click)="sortBy('name')" class="sortable">Student Name</th>
-              <th (click)="sortBy('leetcodeStreak')" class="sortable">LeetCode Streak</th>
-              <th (click)="sortBy('codechefRating')" class="sortable">CodeChef Rating</th>
-              <th (click)="sortBy('totalSolved')" class="sortable">Total Solved</th>
+              <th>RANK</th>
+              <th (click)="setSort('name')" class="sortable">STUDENT NAME</th>
+              <th (click)="setSort('leetcodeStreak')" class="sortable">LC STREAK</th>
+              <th (click)="setSort('leetcodeEasy')" class="sortable">LC EASY</th>
+              <th (click)="setSort('leetcodeMedium')" class="sortable">LC MEDIUM</th>
+              <th (click)="setSort('leetcodeHard')" class="sortable">LC HARD</th>
+              <th (click)="setSort('codechefSolved')" class="sortable">CODECHEF SOLVED</th>
+              <th (click)="setSort('totalSolved')" class="sortable">TOTAL SOLVED</th>
+              <th (click)="setSort('solvedToday')" class="sortable">SOLVED TODAY</th>
+              <th>ACTIONS</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let student of filteredAndSortedStudents()" class="table-row">
-              <td class="rank-cell">
-                <span class="rank-badge" [class.top-3]="student.rank <= 3">#{{ student.rank }}</span>
-              </td>
-              <td class="name-cell">{{ student.name }}</td>
+            <tr *ngFor="let student of filteredAndSortedStudents(); let i = index" class="table-row">
+              <td class="rank-col">#{{ i + 1 }}</td>
+              <td class="name-col">{{ student.name }}</td>
+              
               <td>
-                <div class="streak-badge" [class.hot]="student.leetcodeStreak > 30">
-                  <span *ngIf="student.leetcodeStreak > 30">🔥</span> {{ student.leetcodeStreak }} days
+                <span class="badge" [class.fire]="student.leetcodeStreak > 5">
+                  {{ student.leetcodeStreak > 5 ? '🔥' : '' }} {{ student.leetcodeStreak }}
+                </span>
+              </td>
+              <td class="easy-col">{{ student.leetcodeEasy }}</td>
+              <td class="medium-col">{{ student.leetcodeMedium }}</td>
+              <td class="hard-col">{{ student.leetcodeHard }}</td>
+              <td class="cc-col">{{ student.codechefSolved }}</td>
+              
+              <td class="total-col">{{ student.totalSolved }}</td>
+              <td class="today-col">
+                <span class="badge success" *ngIf="student.solvedToday > 0">+{{ student.solvedToday }}</span>
+                <span *ngIf="student.solvedToday === 0">0</span>
+              </td>
+              <td>
+                <div class="actions-col">
+                  <button class="action-btn" (click)="openEditForm(student)" title="Edit Details">✏️</button>
+                  <button class="action-btn" (click)="deleteStudent(student.id)" title="Remove Student">🗑️</button>
                 </div>
               </td>
-              <td class="rating-cell">{{ student.codechefRating }}</td>
-              <td class="solved-cell">{{ student.totalSolved }}</td>
             </tr>
             <tr *ngIf="filteredAndSortedStudents().length === 0">
-              <td colspan="5" class="empty-state">No students found.</td>
+              <td colspan="10" class="empty-state">No students found.</td>
             </tr>
           </tbody>
         </table>
       </div>
-    </section>
 
-    <!-- Side Panel -->
-    <aside class="side-panel glass-panel">
-      <h2 class="section-title">Top 5 Solvers</h2>
-      <div class="chart-container">
-        <div class="bar-chart-item" *ngFor="let top of top5Students(); let i = index">
-          <div class="bar-label">
-            <span>{{ top.name }}</span>
-            <span class="bar-value">{{ top.totalSolved }}</span>
-          </div>
-          <div class="bar-track">
-            <div class="bar-fill" [style.width.%]="(top.totalSolved / top5Students()[0].totalSolved) * 100" 
-                 [style.animation-delay.ms]="i * 150"></div>
-          </div>
-        </div>
+      <div class="panel-footer" *ngIf="!showAddStudentForm() && !showEditStudentForm() && filteredAndSortedStudents().length > 5">
+        <button class="primary-btn sm" (click)="toggleAddForm()">
+          + Add New Student
+        </button>
       </div>
-      
-      <h2 class="section-title mt-4">Recent Activity</h2>
-      <ul class="activity-feed">
-        <li class="activity-item">
-          <span class="activity-dot blue"></span>
-          <p><strong>Diana Prince</strong> solved 5 Hard problems.</p>
-        </li>
-        <li class="activity-item">
-          <span class="activity-dot purple"></span>
-          <p><strong>Alice Chen</strong> reached a 45-day streak!</p>
-        </li>
-        <li class="activity-item">
-          <span class="activity-dot cyan"></span>
-          <p><strong>Bob Smith</strong> participated in CodeChef Starters.</p>
-        </li>
-      </ul>
-    </aside>
-  </div>
+    </section>
+  </main>
 </div>

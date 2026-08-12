@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Build artifacts
+dist/
+dist-app/
+public/
+frontend/dist/
+
+# Executables & Binaries
+*.exe
+*.dll
+*.7z
+*.pak
+*.bin
+
+# Environment & Logs
+.env
+*.log

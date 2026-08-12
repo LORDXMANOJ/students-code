@@ -20,5 +20,10 @@ model DailyStat {
   date        DateTime @default(now())
   streak      Int      @default(0)
   totalSolved Int      @default(0)
+  easy        Int      @default(0)
+  medium      Int      @default(0)
+  hard        Int      @default(0)
+  solvedToday Int      @default(0)
+  codechefSolved Int    @default(0)
   student     Student  @relation(fields: [studentId], references: [id])
 }
