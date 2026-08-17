@@ -2,5 +2,15 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "angular",
   "buildCommand": "npm run build",
-  "outputDirectory": "dist/frontend/browser"
+  "outputDirectory": "dist/frontend/browser",
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://students-code-api.onrender.com/api/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
 }

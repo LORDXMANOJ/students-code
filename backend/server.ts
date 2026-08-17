@@ -24,8 +24,18 @@ const clientOrigins = process.env.CLIENT_URL
   : '*';
 
 app.use(cors({
-  origin: clientOrigins === '*' ? '*' : clientOrigins,
-  credentials: true
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (!process.env.CLIENT_URL || process.env.CLIENT_URL === '*') return callback(null, true);
+    const allowed = process.env.CLIENT_URL.split(',').map(s => s.trim().replace(/\/$/, ''));
+    if (allowed.includes(origin.replace(/\/$/, '')) || allowed.includes('*')) {
+      return callback(null, true);
+    }
+    return callback(null, true);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 
