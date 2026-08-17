@@ -1,20 +1,69 @@
 import 'dotenv/config';
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import * as cheerio from 'cheerio';
 import * as path from 'path';
 import { exec } from 'child_process';
 import * as fs from 'fs';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 import {
-  getLeaderboard, getAllStudents, addStudent, updateStudent,
-  deleteStudent, insertDailyStat
+  getLeaderboard, getAllStudents, getStudentsBySection, addStudent,
+  updateStudent, deleteStudent, insertDailyStat, isHandleGloballyTaken,
+  getDepartmentsWithStats, getAllDepartments, addDepartment, renameDepartment,
+  getUsers, getUserByEmail, getUserById, addUser, updateUserPassword, deleteUser,
+  getDepartmentById
 } from './db';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'codetracker_secret_jwt_key_2026_super_admin';
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Helper to scrape LeetCode
+// ─── Custom Request Interface for Auth ────────────────────
+export interface AuthUser {
+  id: number;
+  email: string;
+  role: 'SUPER_ADMIN' | 'DEPARTMENT_USER';
+  department_id: number | null;
+  departmentName?: string | null;
+}
+
+declare global {
+  namespace Express {
+    interface Request {
+      user?: AuthUser;
+    }
+  }
+}
+
+// ─── Authentication Middleware ────────────────────────────
+function authenticateToken(req: Request, res: Response, next: NextFunction) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ error: 'Authentication required. Please log in.' });
+  }
+
+  jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
+    if (err) {
+      return res.status(403).json({ error: 'Invalid or expired session. Please log in again.' });
+    }
+    req.user = user as AuthUser;
+    next();
+  });
+}
+
+function requireSuperAdmin(req: Request, res: Response, next: NextFunction) {
+  if (!req.user || req.user.role !== 'SUPER_ADMIN') {
+    return res.status(403).json({ error: 'Access denied. Super Admin privileges required.' });
+  }
+  next();
+}
+
+// ─── Helper to Scrape LeetCode ────────────────────────────
 async function fetchLeetCodeStats(username: string) {
   const query = `
     query getUserProfile($username: String!) {
@@ -68,7 +117,7 @@ async function fetchLeetCodeStats(username: string) {
   }
 }
 
-// Helper to scrape CodeChef
+// ─── Helper to Scrape CodeChef ────────────────────────────
 async function fetchCodeChefStats(username: string | null): Promise<number> {
   if (!username) return 0;
   try {
@@ -87,33 +136,286 @@ async function fetchCodeChefStats(username: string | null): Promise<number> {
   }
 }
 
-// Get Leaderboard
-app.get('/api/leaderboard', (req, res) => {
+// ─── Authentication Routes ────────────────────────────────
+
+// Login
+app.post('/api/auth/login', (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password are required.' });
+  }
+
+  const user = getUserByEmail(email);
+  if (!user) {
+    return res.status(401).json({ error: 'Invalid email or password.' });
+  }
+
+  const isPasswordValid = bcrypt.compareSync(password, user.password_hash);
+  if (!isPasswordValid) {
+    return res.status(401).json({ error: 'Invalid email or password.' });
+  }
+
+  const tokenPayload: AuthUser = {
+    id: user.id,
+    email: user.email,
+    role: user.role,
+    department_id: user.department_id,
+    departmentName: user.departmentName
+  };
+
+  const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '7d' });
+
+  res.json({
+    token,
+    user: {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      departmentId: user.department_id,
+      departmentName: user.departmentName
+    }
+  });
+});
+
+// Current Authenticated User Info
+app.get('/api/auth/me', authenticateToken, (req, res) => {
+  const user = getUserById(req.user!.id);
+  if (!user) {
+    return res.status(404).json({ error: 'User not found.' });
+  }
+  res.json({
+    id: user.id,
+    email: user.email,
+    role: user.role,
+    departmentId: user.department_id,
+    departmentName: user.departmentName
+  });
+});
+
+// Change Password
+app.post('/api/auth/change-password', authenticateToken, (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ error: 'Current password and new password are required.' });
+  }
+  if (newPassword.length < 6) {
+    return res.status(400).json({ error: 'New password must be at least 6 characters long.' });
+  }
+
+  const user = getUserById(req.user!.id);
+  if (!user) {
+    return res.status(404).json({ error: 'User not found.' });
+  }
+
+  const isCurrentValid = bcrypt.compareSync(currentPassword, user.password_hash);
+  if (!isCurrentValid) {
+    return res.status(400).json({ error: 'Incorrect current password.' });
+  }
+
+  const newHash = bcrypt.hashSync(newPassword, 10);
+  updateUserPassword(user.id, newHash);
+
+  res.json({ success: true, message: 'Password updated successfully.' });
+});
+
+// ─── Department Management Routes ─────────────────────────
+
+// Get all departments with stats
+app.get('/api/departments', authenticateToken, (req, res) => {
   try {
-    const leaderboard = getLeaderboard();
-    res.json(leaderboard);
+    const departments = getDepartmentsWithStats();
+    res.json(departments);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to fetch leaderboard' });
+    console.error('Error fetching departments:', error);
+    res.status(500).json({ error: 'Failed to fetch departments.' });
   }
 });
 
-// Refresh Leaderboard Stats (On demand)
-app.post('/api/leaderboard/refresh', async (req, res) => {
+// Create Department (Super Admin only)
+app.post('/api/departments', authenticateToken, requireSuperAdmin, (req, res) => {
+  const { name } = req.body;
+  if (!name || !name.trim()) {
+    return res.status(400).json({ error: 'Department name is required.' });
+  }
   try {
-    const students = getAllStudents();
-    console.log(`Refreshing stats for ${students.length} students...`);
-    
-    // Process in batches of 5 to run in parallel while avoiding rate limits
+    const dept = addDepartment(name);
+    res.json(dept);
+  } catch (error: any) {
+    if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+      return res.status(400).json({ error: 'A department with this name already exists.' });
+    }
+    console.error('Error creating department:', error);
+    res.status(500).json({ error: 'Failed to create department.' });
+  }
+});
+
+// Rename Department (Super Admin only)
+app.put('/api/departments/:id', authenticateToken, requireSuperAdmin, (req, res) => {
+  const deptId = parseInt(req.params.id);
+  const { name } = req.body;
+  if (!name || !name.trim()) {
+    return res.status(400).json({ error: 'Department name is required.' });
+  }
+  try {
+    const dept = renameDepartment(deptId, name);
+    if (!dept) {
+      return res.status(404).json({ error: 'Department not found.' });
+    }
+    res.json(dept);
+  } catch (error: any) {
+    if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+      return res.status(400).json({ error: 'A department with this name already exists.' });
+    }
+    console.error('Error renaming department:', error);
+    res.status(500).json({ error: 'Failed to rename department.' });
+  }
+});
+
+// ─── User Management Routes (Super Admin only) ────────────
+
+// List all users
+app.get('/api/users', authenticateToken, requireSuperAdmin, (req, res) => {
+  try {
+    const users = getUsers();
+    res.json(users);
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ error: 'Failed to fetch users.' });
+  }
+});
+
+// Create Department User
+app.post('/api/users', authenticateToken, requireSuperAdmin, (req, res) => {
+  const { email, password, departmentId } = req.body;
+  if (!email || !password || !departmentId) {
+    return res.status(400).json({ error: 'Email, password, and department are required.' });
+  }
+  if (password.length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters long.' });
+  }
+
+  const dept = getDepartmentById(parseInt(departmentId));
+  if (!dept) {
+    return res.status(400).json({ error: 'Selected department does not exist.' });
+  }
+
+  const existing = getUserByEmail(email);
+  if (existing) {
+    return res.status(400).json({ error: 'A user with this email address already exists.' });
+  }
+
+  try {
+    const passwordHash = bcrypt.hashSync(password, 10);
+    const newUser = addUser(email, passwordHash, 'DEPARTMENT_USER', dept.id);
+    res.json(newUser);
+  } catch (error) {
+    console.error('Error creating user:', error);
+    res.status(500).json({ error: 'Failed to create user.' });
+  }
+});
+
+// Reset User Password (Admin only)
+app.put('/api/users/:id/reset-password', authenticateToken, requireSuperAdmin, (req, res) => {
+  const userId = parseInt(req.params.id);
+  const { newPassword } = req.body;
+  if (!newPassword || newPassword.length < 6) {
+    return res.status(400).json({ error: 'New password must be at least 6 characters long.' });
+  }
+
+  const user = getUserById(userId);
+  if (!user) {
+    return res.status(404).json({ error: 'User not found.' });
+  }
+
+  try {
+    const newHash = bcrypt.hashSync(newPassword, 10);
+    updateUserPassword(userId, newHash);
+    res.json({ success: true, message: `Password reset successfully for ${user.email}.` });
+  } catch (error) {
+    console.error('Error resetting password:', error);
+    res.status(500).json({ error: 'Failed to reset user password.' });
+  }
+});
+
+// Delete User Account
+app.delete('/api/users/:id', authenticateToken, requireSuperAdmin, (req, res) => {
+  const userId = parseInt(req.params.id);
+  const user = getUserById(userId);
+  if (!user) {
+    return res.status(404).json({ error: 'User not found.' });
+  }
+
+  if (user.role === 'SUPER_ADMIN') {
+    return res.status(403).json({ error: 'Cannot delete the Super Admin account.' });
+  }
+
+  if (user.id === req.user!.id) {
+    return res.status(403).json({ error: 'Cannot delete your own active account.' });
+  }
+
+  try {
+    deleteUser(userId);
+    res.json({ success: true, message: 'User deleted successfully.' });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ error: 'Failed to delete user.' });
+  }
+});
+
+// ─── Student & Leaderboard Routes ─────────────────────────
+
+// Get Leaderboard (Scoped to department)
+app.get('/api/leaderboard', authenticateToken, (req, res) => {
+  try {
+    let departmentId: number | null = null;
+
+    if (req.user!.role === 'DEPARTMENT_USER') {
+      departmentId = req.user!.department_id;
+    } else if (req.user!.role === 'SUPER_ADMIN' && req.query.departmentId) {
+      departmentId = parseInt(req.query.departmentId as string);
+    }
+
+    const leaderboard = getLeaderboard(departmentId);
+    res.json(leaderboard);
+  } catch (error) {
+    console.error('Error fetching leaderboard:', error);
+    res.status(500).json({ error: 'Failed to fetch leaderboard.' });
+  }
+});
+
+// Section-Scoped Refresh Stats (Only refreshes students in the current Year & Section)
+app.post('/api/leaderboard/refresh', authenticateToken, async (req, res) => {
+  try {
+    let departmentId = req.user!.role === 'DEPARTMENT_USER'
+      ? req.user!.department_id
+      : parseInt(req.body.departmentId);
+
+    const year = parseInt(req.body.year);
+    const section = req.body.section ? req.body.section.toString().trim().toUpperCase() : null;
+
+    if (!departmentId) {
+      return res.status(400).json({ error: 'Department is required for refreshing stats.' });
+    }
+
+    let studentsToRefresh;
+    if (year && section) {
+      studentsToRefresh = getStudentsBySection(departmentId, year, section);
+      console.log(`Refreshing section stats: Dept ${departmentId}, Year ${year}, Section ${section} (${studentsToRefresh.length} students)...`);
+    } else {
+      studentsToRefresh = getAllStudents(departmentId);
+      console.log(`Refreshing department stats: Dept ${departmentId} (${studentsToRefresh.length} students)...`);
+    }
+
+    // Process in batches of 5
     const batchSize = 5;
-    for (let i = 0; i < students.length; i += batchSize) {
-      const batch = students.slice(i, i + batchSize);
+    for (let i = 0; i < studentsToRefresh.length; i += batchSize) {
+      const batch = studentsToRefresh.slice(i, i + batchSize);
       await Promise.all(
         batch.map(async (student) => {
           if (student.leetcodeHandle) {
             const lcStats = await fetchLeetCodeStats(student.leetcodeHandle);
             const ccSolved = await fetchCodeChefStats(student.codechefHandle);
-            
+
             insertDailyStat(student.id, {
               streak: lcStats?.streak || 0,
               totalSolved: lcStats?.totalSolved || 0,
@@ -127,28 +429,61 @@ app.post('/api/leaderboard/refresh', async (req, res) => {
         })
       );
     }
-    
-    const leaderboard = getLeaderboard();
+
+    const leaderboard = getLeaderboard(departmentId);
     res.json(leaderboard);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to refresh leaderboard stats' });
+    console.error('Error refreshing stats:', error);
+    res.status(500).json({ error: 'Failed to refresh leaderboard stats.' });
   }
 });
 
 // Add New Student
-app.post('/api/students', async (req, res) => {
-  const { name, leetcodeLink, codechefLink } = req.body;
-  if (!name || !leetcodeLink) return res.status(400).json({ error: 'Name and LeetCode link are required' });
+app.post('/api/students', authenticateToken, async (req, res) => {
+  const { name, leetcodeLink, codechefLink, year, section } = req.body;
+  if (!name || !leetcodeLink) {
+    return res.status(400).json({ error: 'Name and LeetCode link are required.' });
+  }
 
-  // Extract handles from links
+  // Determine Department
+  let departmentId: number;
+  if (req.user!.role === 'DEPARTMENT_USER') {
+    departmentId = req.user!.department_id!;
+  } else {
+    departmentId = parseInt(req.body.departmentId);
+    if (!departmentId) {
+      return res.status(400).json({ error: 'Department is required.' });
+    }
+  }
+
+  // Validate Year
+  const studentYear = parseInt(year);
+  if (isNaN(studentYear) || studentYear < 1 || studentYear > 4) {
+    return res.status(400).json({ error: 'Year must be a number between 1 and 4.' });
+  }
+
+  // Validate Section
+  const studentSection = section ? section.toString().trim().toUpperCase() : 'A';
+  if (!['A', 'B', 'C', 'D'].includes(studentSection)) {
+    return res.status(400).json({ error: 'Section must be A, B, C, or D.' });
+  }
+
+  // Extract handles
   const leetcodeHandle = leetcodeLink.split('/').filter(Boolean).pop()?.split('?')[0];
   const codechefHandle = codechefLink ? codechefLink.split('/').filter(Boolean).pop()?.split('?')[0] : null;
 
-  try {
-    const student = addStudent(name, leetcodeHandle, codechefHandle);
+  // Global handle uniqueness check
+  if (leetcodeHandle && isHandleGloballyTaken(leetcodeHandle, 'leetcode')) {
+    return res.status(400).json({ error: `LeetCode handle '${leetcodeHandle}' is already assigned to a student in the college.` });
+  }
+  if (codechefHandle && isHandleGloballyTaken(codechefHandle, 'codechef')) {
+    return res.status(400).json({ error: `CodeChef handle '${codechefHandle}' is already assigned to a student in the college.` });
+  }
 
-    // Immediately fetch stats and create daily stat
+  try {
+    const student = addStudent(name, leetcodeHandle, codechefHandle, studentYear, studentSection, departmentId);
+
+    // Fetch initial stats
     if (leetcodeHandle) {
       const lcStats = await fetchLeetCodeStats(leetcodeHandle);
       const ccSolved = await fetchCodeChefStats(codechefHandle);
@@ -165,70 +500,200 @@ app.post('/api/students', async (req, res) => {
     }
     res.json(student);
   } catch (error) {
-    console.error(error);
+    console.error('Error adding student:', error);
     res.status(500).json({ error: 'Failed to add student. Ensure handles are unique.' });
   }
 });
 
-// Update Student Details
-app.put('/api/students/:id', async (req, res) => {
+// Update Student
+app.put('/api/students/:id', authenticateToken, async (req, res) => {
   const studentId = parseInt(req.params.id);
-  const { name, leetcodeLink, codechefLink } = req.body;
+  const { name, leetcodeLink, codechefLink, year, section } = req.body;
 
   if (!name || !leetcodeLink) {
-    return res.status(400).json({ error: 'Name and LeetCode link are required' });
+    return res.status(400).json({ error: 'Name and LeetCode link are required.' });
+  }
+
+  const existingStudent = getAllStudents().find(s => s.id === studentId);
+  if (!existingStudent) {
+    return res.status(404).json({ error: 'Student not found.' });
+  }
+
+  // Security check: Department User can only update students within their department
+  if (req.user!.role === 'DEPARTMENT_USER' && existingStudent.department_id !== req.user!.department_id) {
+    return res.status(403).json({ error: 'Permission denied: Cannot edit students from another department.' });
+  }
+
+  const studentYear = parseInt(year);
+  if (isNaN(studentYear) || studentYear < 1 || studentYear > 4) {
+    return res.status(400).json({ error: 'Year must be a number between 1 and 4.' });
+  }
+
+  const studentSection = section ? section.toString().trim().toUpperCase() : 'A';
+  if (!['A', 'B', 'C', 'D'].includes(studentSection)) {
+    return res.status(400).json({ error: 'Section must be A, B, C, or D.' });
   }
 
   const leetcodeHandle = leetcodeLink.split('/').filter(Boolean).pop()?.split('?')[0];
   const codechefHandle = codechefLink ? codechefLink.split('/').filter(Boolean).pop()?.split('?')[0] : null;
 
-  let student;
-  try {
-    student = updateStudent(studentId, name, leetcodeHandle, codechefHandle);
-  } catch (error: any) {
-    console.error('Student update error:', error);
-    res.status(500).json({ error: 'Failed to update student. Ensure handles are unique.' });
-    return;
+  // Global handle uniqueness check
+  if (leetcodeHandle && isHandleGloballyTaken(leetcodeHandle, 'leetcode', studentId)) {
+    return res.status(400).json({ error: `LeetCode handle '${leetcodeHandle}' is already assigned to another student.` });
+  }
+  if (codechefHandle && isHandleGloballyTaken(codechefHandle, 'codechef', studentId)) {
+    return res.status(400).json({ error: `CodeChef handle '${codechefHandle}' is already assigned to another student.` });
   }
 
-  // Step 2: Re-fetch stats in background (don't block the response)
-  res.json(student);
-
-  // Fire-and-forget: update the daily stats after responding
   try {
-    if (leetcodeHandle) {
-      const lcStats = await fetchLeetCodeStats(leetcodeHandle);
-      const ccSolved = await fetchCodeChefStats(codechefHandle);
+    const updated = updateStudent(studentId, name, leetcodeHandle, codechefHandle, studentYear, studentSection, existingStudent.department_id);
 
-      insertDailyStat(student.id, {
-        streak: lcStats?.streak || 0,
-        totalSolved: lcStats?.totalSolved || 0,
-        easy: lcStats?.easy || 0,
-        medium: lcStats?.medium || 0,
-        hard: lcStats?.hard || 0,
-        solvedToday: lcStats?.solvedToday || 0,
-        codechefSolved: ccSolved
+    // Fire and forget stats refresh
+    if (leetcodeHandle) {
+      fetchLeetCodeStats(leetcodeHandle).then(async (lcStats) => {
+        const ccSolved = await fetchCodeChefStats(codechefHandle);
+        insertDailyStat(studentId, {
+          streak: lcStats?.streak || 0,
+          totalSolved: lcStats?.totalSolved || 0,
+          easy: lcStats?.easy || 0,
+          medium: lcStats?.medium || 0,
+          hard: lcStats?.hard || 0,
+          solvedToday: lcStats?.solvedToday || 0,
+          codechefSolved: ccSolved
+        });
       });
-      console.log(`Updated stats for ${student.name}`);
     }
-  } catch (statsError) {
-    console.error('Stats re-fetch failed (non-critical):', statsError);
+
+    res.json(updated);
+  } catch (error: any) {
+    console.error('Student update error:', error);
+    res.status(500).json({ error: 'Failed to update student.' });
   }
 });
 
 // Delete Student
-app.delete('/api/students/:id', (req, res) => {
+app.delete('/api/students/:id', authenticateToken, (req, res) => {
   const studentId = parseInt(req.params.id);
+  const existingStudent = getAllStudents().find(s => s.id === studentId);
+  if (!existingStudent) {
+    return res.status(404).json({ error: 'Student not found.' });
+  }
+
+  if (req.user!.role === 'DEPARTMENT_USER' && existingStudent.department_id !== req.user!.department_id) {
+    return res.status(403).json({ error: 'Permission denied: Cannot delete students from another department.' });
+  }
+
   try {
     deleteStudent(studentId);
-    res.json({ success: true, message: 'Student removed successfully' });
+    res.json({ success: true, message: 'Student removed successfully.' });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to remove student' });
+    console.error('Error removing student:', error);
+    res.status(500).json({ error: 'Failed to remove student.' });
   }
 });
 
-// Serve static frontend files (if frontend is built and copied)
+// Validate URL (Public/Authenticated)
+app.post('/api/validate-url', async (req, res) => {
+  const { url, platform } = req.body;
+  try {
+    const handle = url.split('/').filter(Boolean).pop()?.split('?')[0];
+    if (!handle) return res.json({ valid: false });
+    
+    if (platform === 'leetcode') {
+      const lres = await fetch(`https://leetcode.com/${handle}`, { method: 'HEAD' });
+      if (lres.status === 404) return res.json({ valid: false });
+      return res.json({ valid: true });
+    } else if (platform === 'codechef') {
+      const cres = await fetch(`https://www.codechef.com/users/${handle}`, { method: 'HEAD' });
+      if (cres.status === 404) return res.json({ valid: false });
+      return res.json({ valid: true });
+    }
+    return res.json({ valid: false });
+  } catch(e) {
+    return res.json({ valid: false });
+  }
+});
+
+// Bulk Upload
+let isBulkProcessing = false;
+let bulkProgress = { total: 0, completed: 0 };
+
+app.post('/api/students/bulk', authenticateToken, async (req, res) => {
+  if (isBulkProcessing) {
+    return res.status(429).json({ error: 'A bulk import is already in progress. Please wait.' });
+  }
+  const students = req.body.students;
+  if (!Array.isArray(students) || students.length === 0) {
+    return res.status(400).json({ error: 'No students provided for import.' });
+  }
+
+  // Determine Department
+  let departmentId: number;
+  if (req.user!.role === 'DEPARTMENT_USER') {
+    departmentId = req.user!.department_id!;
+  } else {
+    departmentId = parseInt(req.body.departmentId);
+    if (!departmentId) {
+      return res.status(400).json({ error: 'Department is required for bulk import.' });
+    }
+  }
+
+  isBulkProcessing = true;
+  bulkProgress = { total: students.length, completed: 0 };
+  
+  res.json({ success: true, message: 'Bulk import started.' });
+  
+  // Background processing
+  setTimeout(async () => {
+    try {
+      for (const s of students) {
+        const leetcodeHandle = s.leetcodeLink.split('/').filter(Boolean).pop()?.split('?')[0];
+        const codechefHandle = s.codechefLink ? s.codechefLink.split('/').filter(Boolean).pop()?.split('?')[0] : null;
+        
+        const studentYear = parseInt(s.year);
+        if (isNaN(studentYear) || studentYear < 1 || studentYear > 4) continue;
+        const studentSection = s.section ? s.section.toString().trim().toUpperCase() : 'A';
+        if (!['A', 'B', 'C', 'D'].includes(studentSection)) continue;
+
+        // Skip if globally duplicated
+        if (leetcodeHandle && isHandleGloballyTaken(leetcodeHandle, 'leetcode')) continue;
+        if (codechefHandle && isHandleGloballyTaken(codechefHandle, 'codechef')) continue;
+        
+        const student = addStudent(s.name, leetcodeHandle, codechefHandle, studentYear, studentSection, departmentId);
+        
+        if (leetcodeHandle) {
+          const lcStats = await fetchLeetCodeStats(leetcodeHandle);
+          const ccSolved = await fetchCodeChefStats(codechefHandle);
+          
+          insertDailyStat(student.id, {
+            streak: lcStats?.streak || 0,
+            totalSolved: lcStats?.totalSolved || 0,
+            easy: lcStats?.easy || 0,
+            medium: lcStats?.medium || 0,
+            hard: lcStats?.hard || 0,
+            solvedToday: lcStats?.solvedToday || 0,
+            codechefSolved: ccSolved
+          });
+        }
+        bulkProgress.completed++;
+      }
+    } catch (err) {
+      console.error('Bulk import error', err);
+    } finally {
+      isBulkProcessing = false;
+    }
+  }, 0);
+});
+
+app.get('/api/stats/progress', authenticateToken, (req, res) => {
+  res.json({
+    isProcessing: isBulkProcessing,
+    completed: bulkProgress.completed,
+    total: bulkProgress.total
+  });
+});
+
+// Serve static frontend files (if built)
 const publicPath = fs.existsSync(path.join(__dirname, 'public'))
   ? path.join(__dirname, 'public')
   : path.join(__dirname, '..', 'public');
@@ -244,15 +709,4 @@ if (fs.existsSync(path.join(publicPath, 'index.html'))) {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
-  
-  // Only open browser automatically if NOT running inside Electron
-  const isElectron = !!process.versions.electron || process.env.IS_ELECTRON === 'true';
-  if (!isElectron) {
-    const url = `http://localhost:${PORT}`;
-    const startCmd = process.platform === 'win32' ? `start ${url}` : process.platform === 'darwin' ? `open ${url}` : `xdg-open ${url}`;
-    exec(startCmd, (err) => {
-      if (err) console.error('Could not open browser automatically:', err.message);
-    });
-  }
 });
-setInterval(() => {}, 100000);

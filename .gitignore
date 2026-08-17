@@ -11,3 +11,6 @@ backend/dist/
 # Environment & Logs
 .env
 *.log
+*.db-shm
+*.db-wal
+students.db
