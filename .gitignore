@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+*/node_modules/
 
 # Build artifacts
 dist/
@@ -8,9 +9,31 @@ public/
 frontend/dist/
 backend/dist/
 
-# Environment & Logs
-.env
-*.log
+# SQLite Databases & Storage
+*.db
 *.db-shm
 *.db-wal
 students.db
+dev.db
+*.sqlite
+*.sqlite3
+
+# Environment, Logs & Temporary Scrapes
+.env
+*.log
+backend/codechef.html
+*.html.tmp
+
+# IDE, Editor & AI Assistant Tooling
+.vscode/
+frontend/.vscode/
+.idea/
+.claude/
+backend/.claude/
+.windsurf/
+backend/.windsurf/
+skills-lock.json
+backend/skills-lock.json
+frontend/src/app/dashboard/students.data.ts
+.DS_Store
+Thumbs.db
