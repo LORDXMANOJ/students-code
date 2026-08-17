@@ -1,26 +1,36 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
 
 :root {
-  --stitch-blue: #0A192F;
-  --stitch-cyan: #00f0ff;
-  --stitch-purple: #7000ff;
-  --ai-glow: rgba(0, 240, 255, 0.6);
-  --glass-bg: rgba(16, 25, 43, 0.45);
-  --glass-border: rgba(0, 240, 255, 0.25);
-  --text-main: #e6f1ff;
-  --text-muted: #8892b0;
+  --bg-color: #F5EBD0;
+  --text-color: #7F011F;
+  --primary-color: #7F011F;
+  --secondary-color: #A93F55;
+  --accent-color: #E2C290;
+  
+  --neon-blue: #7F011F;
+  --neon-purple: #A93F55;
+  
+  --text-main: #7F011F;
+  --text-primary: #7F011F;
+  --text-secondary: rgba(127, 1, 31, 0.75);
+  --text-muted: rgba(127, 1, 31, 0.6);
+  
+  --ai-glow: rgba(127, 1, 31, 0.15);
+  --glass-bg: rgba(255, 255, 255, 0.5);
+  --glass-border: rgba(127, 1, 31, 0.12);
+  --stitch-cyan: #7F011F;
+  --stitch-purple: #A93F55;
 }
 
 body {
   margin: 0;
   padding: 0;
   font-family: 'Outfit', sans-serif;
-  background-color: #030712;
+  background-color: var(--bg-color);
   background-image: 
-    radial-gradient(circle at 10% 20%, rgba(112, 0, 255, 0.15) 0%, transparent 40%),
-    radial-gradient(circle at 90% 80%, rgba(0, 240, 255, 0.15) 0%, transparent 40%),
-    linear-gradient(180deg, rgba(3,7,18,1) 0%, rgba(10,25,47,0.5) 100%);
-  color: var(--text-main);
+    radial-gradient(circle at 10% 20%, rgba(127, 1, 31, 0.05) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(169, 63, 85, 0.05) 0%, transparent 40%);
+  color: var(--text-color);
   min-height: 100vh;
   background-attachment: fixed;
 }
@@ -29,17 +39,17 @@ body {
   box-sizing: border-box;
 }
 
-/* Custom Scrollbar for AI feel */
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #030712; 
+  background: #F5EBD0; 
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--stitch-cyan); 
+  background: var(--primary-color); 
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--stitch-purple); 
+  background: var(--secondary-color); 
 }
