@@ -1,4 +1,4 @@
-﻿# Student Code Tracker (LeetCode & CodeChef Leaderboard)
+# Student Code Tracker (LeetCode & CodeChef Leaderboard)
 
 A full-stack web application designed to track students' daily programming statistics and active streaks on **LeetCode** and **CodeChef**, showcasing them on a real-time global leaderboard.
 
@@ -15,14 +15,11 @@ Make sure you have the following installed on your system:
 - **npm** (comes with Node.js)
 - **Git** (for cloning the repository)
 
----
-
-## 📦 Project Structure
+---## 📦 Project Structure
 
 ```
 code tracker/
 ├── backend/          # Express.js backend server with SQLite database
-│   ├── prisma/       # Database schema and migrations
 │   ├── server.ts     # Main server file
 │   └── package.json  # Backend dependencies
 ├── frontend/         # Angular frontend application
@@ -47,37 +44,25 @@ cd backend
 npm install
 ```
 
-This will install all required packages including Express, Prisma, SQLite adapter, and web scraping libraries.
+This will install all required packages including Express, SQLite adapter (`better-sqlite3`), and web scraping libraries.
 
-### 1.2 Setup the SQLite Database Schema
+### 1.2 Seed Initial Students and Statistics
 
-Sync the database schema via Prisma:
-
-```bash
-npx prisma db push
-```
-
-This creates the SQLite database file (`dev.db`) and sets up all necessary tables (students, daily stats, etc.).
-
-**Note:** Use `npx prisma` not `npm prisma`
-
-### 1.3 Seed Initial Students and Statistics
-
-Run the seeding script to add student profiles and fetch their latest stats:
+Run the seeding script to automatically set up the SQLite database and fetch student statistics:
 
 ```bash
 npx tsx seed.ts
 ```
 
 This will:
-- Load student profiles from `students.json`
-- Create student records in the database
-- Fetch current LeetCode and CodeChef statistics for each student
-- Populate initial daily statistics
+- Automatically initialize the SQLite database file (`dev.db`) and create the required tables.
+- Load student profiles from `students.json`.
+- Fetch current LeetCode and CodeChef statistics for each student.
+- Populate initial daily statistics.
 
 **Note:** Use `npx tsx` not `npm tsx`
 
-### 1.4 Start the Backend Server
+### 1.3 Start the Backend Server
 
 ```bash
 npm run server
@@ -87,7 +72,7 @@ The backend server will start at **http://localhost:3000**
 
 ---
 
-## �� Step 2: Set Up the Frontend Application
+## 💻 Step 2: Set Up the Frontend Application
 
 Open a **new terminal window/tab** and navigate to the `frontend` directory:
 
@@ -127,7 +112,7 @@ Once compiled, navigate to **http://localhost:4200** in your web browser to acce
 
 ### Database Technology
 
-This application uses **SQLite** as its local database, managed through **Prisma ORM**. SQLite is a lightweight, file-based database that requires no separate database server - perfect for local development.
+This application uses **SQLite** as its local database, managed directly through the `better-sqlite3` library. SQLite is a lightweight, file-based database that requires no separate database server - perfect for local development.
 
 ### Database File Location
 
@@ -136,7 +121,7 @@ The SQLite database is stored in:
 backend/dev.db
 ```
 
-This file is automatically created when you run `npx prisma db push` and contains all your student data and statistics.
+This file is automatically created on startup and contains all your student data and statistics.
 
 ### Database Schema
 
@@ -147,8 +132,6 @@ The database consists of two main tables:
 - `name` - Student name
 - `leetcodeHandle` - LeetCode username
 - `codechefHandle` - CodeChef username (optional)
-- `createdAt` - Record creation timestamp
-- `updatedAt` - Record update timestamp
 
 #### DailyStats Table
 - `id` - Unique identifier
@@ -162,10 +145,10 @@ The database consists of two main tables:
 
 ### Data Persistence
 
-- The database file (`dev.db`) persists all your data locally
-- You can backup the database by copying the `dev.db` file
-- To reset the database, simply delete `dev.db` and re-run the seed command
-- Student profiles are managed externally in `backend/students.json` for easy editing
+- The database file (`dev.db`) persists all your data locally.
+- You can backup the database by copying the `dev.db` file.
+- To reset the database, simply delete `dev.db` and re-run the seed command.
+- Student profiles are managed externally in `backend/students.json` for easy editing.
 
 ### Re-seeding the Database
 
@@ -195,9 +178,7 @@ npm run server
 
 ### Backend (from `/backend` directory)
 - `npm run server` - Start the Express server on port 3000
-- `npx prisma db push` - Sync database schema
 - `npx tsx seed.ts` - Seed database with initial student data
-- `npx prisma studio` - Open Prisma Studio to view/edit database visually
 
 ### Frontend (from `/frontend` directory)
 - `npm start` or `ng serve` - Start development server on port 4200
@@ -234,9 +215,8 @@ If port 3000 or 4200 is already in use:
 If you encounter database errors:
 1. Stop the backend server
 2. Delete `backend/dev.db`
-3. Run `npx prisma db push`
-4. Run `npx tsx seed.ts`
-5. Restart the server
+3. Run `npx tsx seed.ts`
+4. Restart the server
 
 ### Dependencies Issues
 If packages fail to install:
@@ -247,7 +227,6 @@ npm install
 ```
 
 ### Command Not Found
-- Use `npx prisma` not `npm prisma`
 - Use `npx tsx` not `npm tsx`
 - `npx` comes with npm and runs packages from node_modules/.bin
 
@@ -275,4 +254,4 @@ ISC License
 
 ---
 
-**Built with ❤️ using Node.js, Express, Prisma, SQLite, and Angular**
+**Built with ❤️ using Node.js, Express, SQLite, and Angular**

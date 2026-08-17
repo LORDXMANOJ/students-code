@@ -36,6 +36,7 @@ export class DashboardComponent implements OnInit {
     codechefLink: ''
   };
   isAdding = signal(false);
+  isRefreshing = signal(false);
 
   // Edit Student Form State
   showEditStudentForm = signal(false);
@@ -69,6 +70,26 @@ export class DashboardComponent implements OnInit {
     } catch (e) {
       console.error('Failed to fetch leaderboard', e);
     }
+  }
+
+  async refreshStats() {
+    this.isRefreshing.set(true);
+    try {
+      const res = await fetch(this.getApiUrl('/api/leaderboard/refresh'), {
+        method: 'POST'
+      });
+      if (res.ok) {
+        const data = await res.json();
+        this.students.set(data);
+        this.lastUpdated = new Date();
+      } else {
+        alert('Failed to refresh leaderboard statistics.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error connecting to backend.');
+    }
+    this.isRefreshing.set(false);
   }
 
   async addStudent() {

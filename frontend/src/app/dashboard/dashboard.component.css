@@ -187,6 +187,11 @@
   background: rgba(255, 255, 255, 0.05);
 }
 
+.secondary-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .leaderboard-panel {
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid rgba(255, 255, 255, 0.05);

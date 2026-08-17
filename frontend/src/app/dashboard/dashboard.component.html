@@ -78,9 +78,14 @@
     <section class="leaderboard-panel">
       <div class="panel-header">
         <h2>Global Leaderboard</h2>
-        <button class="primary-btn sm" (click)="toggleAddForm()" *ngIf="!showAddStudentForm() && !showEditStudentForm()">
-          + Add New Student
-        </button>
+        <div class="header-actions" *ngIf="!showAddStudentForm() && !showEditStudentForm()">
+          <button class="secondary-btn sm" (click)="refreshStats()" [disabled]="isRefreshing()" style="margin-right: 8px;">
+            {{ isRefreshing() ? '♻️ Refreshing...' : '🔄 Refresh Stats' }}
+          </button>
+          <button class="primary-btn sm" (click)="toggleAddForm()">
+            + Add New Student
+          </button>
+        </div>
       </div>
       
       <div class="table-container">

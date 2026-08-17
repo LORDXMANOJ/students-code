@@ -1,13 +1,7 @@
-import { PrismaClient } from '@prisma/client';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import * as cheerio from 'cheerio';
 import * as fs from 'fs';
 import * as path from 'path';
-
-const dbUrl = process.env.DATABASE_URL || 'file:./dev.db';
-const rawDbPath = dbUrl.startsWith('file:') ? dbUrl.substring(5) : dbUrl;
-const adapter = new PrismaBetterSqlite3({ url: rawDbPath });
-const prisma = new PrismaClient({ adapter });
+import { upsertStudent, insertDailyStat } from './db';
 
 // Load students list from external JSON file
 const studentsListPath = process.env.STUDENTS_JSON_PATH || path.join(__dirname, 'students.json');
@@ -93,50 +87,25 @@ async function main() {
     count++;
     console.log(`[${count}/${studentsList.length}] Upserting & fetching stats for ${s.name}...`);
     
-    const student = await prisma.student.upsert({
-      where: { leetcodeHandle: s.leetcode },
-      update: {
-        codechefHandle: s.codechef
-      },
-      create: {
-        name: s.name,
-        leetcodeHandle: s.leetcode,
-        codechefHandle: s.codechef
-      }
-    });
+    const student = upsertStudent(s.name, s.leetcode, s.codechef);
 
     // Fetch LeetCode and CodeChef stats
     const lcStats = await fetchLeetCodeStats(s.leetcode);
     const ccSolved = await fetchCodeChefStats(s.codechef);
 
+    insertDailyStat(student.id, {
+      streak: lcStats?.streak || 0,
+      totalSolved: lcStats?.totalSolved || 0,
+      easy: lcStats?.easy || 0,
+      medium: lcStats?.medium || 0,
+      hard: lcStats?.hard || 0,
+      solvedToday: lcStats?.solvedToday || 0,
+      codechefSolved: ccSolved
+    });
+
     if (lcStats) {
-      await prisma.dailyStat.create({
-        data: {
-          studentId: student.id,
-          streak: lcStats.streak,
-          totalSolved: lcStats.totalSolved,
-          easy: lcStats.easy,
-          medium: lcStats.medium,
-          hard: lcStats.hard,
-          solvedToday: lcStats.solvedToday,
-          codechefSolved: ccSolved
-        }
-      });
       console.log(`  -> LeetCode: ${lcStats.totalSolved} (Streak: ${lcStats.streak}), CodeChef: ${ccSolved}`);
     } else {
-      // Create empty stats or only CodeChef stats if LeetCode fails
-      await prisma.dailyStat.create({
-        data: {
-          studentId: student.id,
-          streak: 0,
-          totalSolved: 0,
-          easy: 0,
-          medium: 0,
-          hard: 0,
-          solvedToday: 0,
-          codechefSolved: ccSolved
-        }
-      });
       console.log(`  -> LeetCode failed, CodeChef: ${ccSolved}`);
     }
 
