@@ -15,12 +15,15 @@ Make sure you have the following installed on your system:
 - **npm** (comes with Node.js)
 - **Git** (for cloning the repository)
 
----## 📦 Project Structure
+---
 
-```
+## 📦 Project Structure
+
+```text
 code tracker/
 ├── backend/          # Express.js backend server with SQLite database
 │   ├── server.ts     # Main server file
+│   ├── db.ts         # SQLite database management (replaces Prisma)
 │   └── package.json  # Backend dependencies
 ├── frontend/         # Angular frontend application
 │   ├── src/          # Angular source code
@@ -44,7 +47,7 @@ cd backend
 npm install
 ```
 
-This will install all required packages including Express, SQLite adapter (`better-sqlite3`), and web scraping libraries.
+This will install all required packages including Express, SQLite adapter (`better-sqlite3`), and other utilities.
 
 ### 1.2 Seed Initial Students and Statistics
 
@@ -243,6 +246,7 @@ npm install
 ---
 
 ## 🤝 Contributing
+
 
 Feel free to submit issues and enhancement requests!
 
