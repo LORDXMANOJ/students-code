@@ -2,6 +2,7 @@ import { Component, computed, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import * as XLSX from 'xlsx';
+import { environment } from '../../environments/environment';
 
 export interface User {
   id: number;
@@ -178,8 +179,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   allowedSections = ['A', 'B', 'C', 'D'];
 
   getApiUrl(path: string): string {
-    const isDev = window.location.port === '4200';
-    return isDev ? `http://localhost:3000${path}` : path;
+    const base = environment.apiUrl ? environment.apiUrl.replace(/\/$/, '') : '';
+    return `${base}${path}`;
   }
 
   getAuthHeaders(): Record<string, string> {

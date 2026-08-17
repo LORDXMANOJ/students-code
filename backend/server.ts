@@ -18,8 +18,25 @@ import {
 const JWT_SECRET = process.env.JWT_SECRET || 'codetracker_secret_jwt_key_2026_super_admin';
 
 const app = express();
-app.use(cors());
+
+const clientOrigins = process.env.CLIENT_URL
+  ? process.env.CLIENT_URL.split(',').map(s => s.trim())
+  : '*';
+
+app.use(cors({
+  origin: clientOrigins === '*' ? '*' : clientOrigins,
+  credentials: true
+}));
 app.use(express.json());
+
+// ─── Health Check Endpoint (Deployment testing) ───────────
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    version: '1.0.0',
+    time: new Date().toISOString()
+  });
+});
 
 // ─── Custom Request Interface for Auth ────────────────────
 export interface AuthUser {
@@ -707,6 +724,34 @@ if (fs.existsSync(path.join(publicPath, 'index.html'))) {
 }
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+try {
+  app.listen(PORT, () => {
+    console.log('✓ Database initialized successfully');
+    console.log('✓ CodeTracker Server started');
+    console.log(`✓ Listening on port ${PORT}`);
+    
+    // Only open browser automatically in development when not on server or Electron
+    if (process.env.NODE_ENV !== 'production' && !process.env.PORT) {
+      const isElectron = !!process.versions.electron || process.env.IS_ELECTRON === 'true';
+      if (!isElectron) {
+        const url = `http://localhost:${PORT}`;
+        const startCmd = process.platform === 'win32' ? `start ${url}` : process.platform === 'darwin' ? `open ${url}` : `xdg-open ${url}`;
+        exec(startCmd, (err) => {
+          if (err) console.error('Could not open browser automatically:', err.message);
+        });
+      }
+    }
+  });
+} catch (startupError) {
+  console.error('Fatal error during server startup:', startupError);
+  process.exit(1);
+}
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+});
+
