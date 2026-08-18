@@ -1,7 +1,8 @@
+import 'dotenv/config';
 import * as cheerio from 'cheerio';
 import * as fs from 'fs';
 import * as path from 'path';
-import { upsertStudent, insertDailyStat } from './db';
+import { initDb, upsertStudent, insertDailyStat, pool } from './db';
 
 // Load students list from external JSON file
 const studentsListPath = process.env.STUDENTS_JSON_PATH || path.join(__dirname, 'students.json');
@@ -81,19 +82,20 @@ async function fetchCodeChefStats(username: string | null): Promise<number> {
 }
 
 async function main() {
+  await initDb();
   console.log(`Seeding database with ${studentsList.length} students from students.json...`);
   let count = 0;
   for (const s of studentsList) {
     count++;
     console.log(`[${count}/${studentsList.length}] Upserting & fetching stats for ${s.name}...`);
     
-    const student = upsertStudent(s.name, s.leetcode, s.codechef);
+    const student = await upsertStudent(s.name, s.leetcode, s.codechef);
 
     // Fetch LeetCode and CodeChef stats
     const lcStats = await fetchLeetCodeStats(s.leetcode);
     const ccSolved = await fetchCodeChefStats(s.codechef);
 
-    insertDailyStat(student.id, {
+    await insertDailyStat(student.id, {
       streak: lcStats?.streak || 0,
       totalSolved: lcStats?.totalSolved || 0,
       easy: lcStats?.easy || 0,
@@ -113,10 +115,12 @@ async function main() {
     await new Promise(resolve => setTimeout(resolve, 200));
   }
   console.log('Database seeded successfully.');
+  await pool.end();
 }
 
 main()
-  .catch(e => {
+  .catch(async (e) => {
     console.error(e);
+    await pool.end().catch(() => {});
     process.exit(1);
   });
