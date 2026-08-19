@@ -15,10 +15,7 @@
 <div class="login-wrapper" *ngIf="viewMode() === 'login'">
   <div class="login-card">
     <div class="login-logo">
-      <svg class="logo-icon-lg" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M3 19V5h18v14H3Zm2-2h6V7H5v10Zm8 0h6v-5h-6v5Zm0-7h6V7h-6v3Z"/>
-      </svg>
-      <h1>CodeTracker</h1>
+      <img src="assets/logo.png" alt="CodeTracker" class="login-logo-img">
     </div>
     
     <div class="login-header">
@@ -85,10 +82,7 @@
   <header class="top-nav-bar">
     <div class="nav-left">
       <div class="portal-logo" (click)="currentUser()?.role === 'SUPER_ADMIN' ? (viewMode.set('admin-departments')) : (viewMode.set('academic-structure'))">
-        <svg class="logo-icon" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M3 19V5h18v14H3Zm2-2h6V7H5v10Zm8 0h6v-5h-6v5Zm0-7h6V7h-6v3Z"/>
-        </svg>
-        <span class="portal-brand">CodeTracker</span>
+        <img src="assets/logo.png" alt="CodeTracker" class="portal-logo-img">
       </div>
 
       <!-- Navigation Tabs -->

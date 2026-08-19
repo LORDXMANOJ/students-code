@@ -3,13 +3,32 @@ import bcrypt from 'bcryptjs';
 
 const connectionString = process.env.DATABASE_URL;
 
-const isLocalhost = connectionString
-  ? connectionString.includes('localhost') || connectionString.includes('127.0.0.1')
-  : false;
+function getSslConfig() {
+  if (!connectionString) return false;
+  if (
+    connectionString.includes('sslmode=disable') ||
+    connectionString.includes('ssl=false') ||
+    connectionString.includes('localhost') ||
+    connectionString.includes('127.0.0.1') ||
+    connectionString.startsWith('file:')
+  ) {
+    return false;
+  }
+  if (
+    connectionString.includes('sslmode=require') ||
+    connectionString.includes('neon.tech') ||
+    connectionString.includes('render.com') ||
+    connectionString.includes('supabase') ||
+    connectionString.includes('amazonaws.com')
+  ) {
+    return { rejectUnauthorized: false };
+  }
+  return false;
+}
 
 export const pool = new Pool({
-  connectionString,
-  ssl: isLocalhost || !connectionString ? false : { rejectUnauthorized: false }
+  connectionString: connectionString && !connectionString.startsWith('file:') ? connectionString : undefined,
+  ssl: getSslConfig()
 });
 
 // ─── Interfaces ───────────────────────────────────────────

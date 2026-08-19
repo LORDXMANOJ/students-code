@@ -5,6 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch server.ts",
+    "server": "tsx watch server.ts",
     "build": "npx esbuild server.ts --bundle --platform=node --outfile=dist/server.js --external:pg",
     "start": "node dist/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
