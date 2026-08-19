@@ -15,7 +15,7 @@
 <div class="login-wrapper" *ngIf="viewMode() === 'login'">
   <div class="login-card">
     <div class="login-logo">
-      <img src="assets/logo.png" alt="CodeTracker" class="login-logo-img">
+      <img src="logo.png" alt="CodeTracker" class="login-logo-img" (error)="$any($event.target).src = 'assets/logo.png'">
     </div>
     
     <div class="login-header">
@@ -82,7 +82,7 @@
   <header class="top-nav-bar">
     <div class="nav-left">
       <div class="portal-logo" (click)="currentUser()?.role === 'SUPER_ADMIN' ? (viewMode.set('admin-departments')) : (viewMode.set('academic-structure'))">
-        <img src="assets/logo.png" alt="CodeTracker" class="portal-logo-img">
+        <img src="logo.png" alt="CodeTracker" class="portal-logo-img" (error)="$any($event.target).src = 'assets/logo.png'">
       </div>
 
       <!-- Navigation Tabs -->
