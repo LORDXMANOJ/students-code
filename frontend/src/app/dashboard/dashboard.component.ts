@@ -178,6 +178,50 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ];
   allowedSections = ['A', 'B', 'C', 'D'];
 
+  // ─── Morphing Wave Full-Screen Loader State ───────────────
+  isAppLoading = signal(false);
+  loadingProgress = signal(0);
+  isLoadComplete = signal(false);
+  isOverlayFading = signal(false);
+
+  async runWithLoader<T>(task: () => Promise<T>, initialProgress = 25): Promise<T | void> {
+    this.isAppLoading.set(true);
+    this.isLoadComplete.set(false);
+    this.isOverlayFading.set(false);
+    this.loadingProgress.set(initialProgress);
+
+    const progressTimer = setInterval(() => {
+      const cur = this.loadingProgress();
+      if (cur < 92) {
+        this.loadingProgress.set(cur + Math.floor(Math.random() * 8) + 4);
+      }
+    }, 90);
+
+    try {
+      const result = await task();
+      this.loadingProgress.set(100);
+      this.isLoadComplete.set(true);
+      
+      // Hold for 500ms upon 100% completion, then smoothly fade out
+      await new Promise(resolve => setTimeout(resolve, 500));
+      this.isOverlayFading.set(true);
+      await new Promise(resolve => setTimeout(resolve, 450));
+      this.isAppLoading.set(false);
+      this.isOverlayFading.set(false);
+      this.isLoadComplete.set(false);
+      this.loadingProgress.set(0);
+      return result;
+    } catch (err) {
+      this.isAppLoading.set(false);
+      this.isOverlayFading.set(false);
+      this.isLoadComplete.set(false);
+      this.loadingProgress.set(0);
+      throw err;
+    } finally {
+      clearInterval(progressTimer);
+    }
+  }
+
   getApiUrl(path: string): string {
     const base = environment.apiUrl ? environment.apiUrl.replace(/\/$/, '') : '';
     return `${base}${path}`;
@@ -193,7 +237,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.restoreSession();
+    this.runWithLoader(async () => {
+      await this.restoreSessionAsync();
+    }, 35);
   }
 
   ngOnDestroy() {
@@ -204,7 +250,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   // ─── Session & Auth Methods ───────────────────────────────
 
-  restoreSession() {
+  async restoreSessionAsync() {
     const savedToken = sessionStorage.getItem('codetracker_token');
     const savedUserStr = sessionStorage.getItem('codetracker_user');
 
@@ -213,7 +259,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         const user: User = JSON.parse(savedUserStr);
         this.token.set(savedToken);
         this.currentUser.set(user);
-        this.onUserLoggedIn(user);
+        await this.onUserLoggedInAsync(user);
         return;
       } catch (e) {
         sessionStorage.removeItem('codetracker_token');
@@ -233,42 +279,45 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.loginError = '';
 
     try {
-      const res = await fetch(this.getApiUrl('/api/auth/login'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: this.loginEmail, password: this.loginPassword })
-      });
+      await this.runWithLoader(async () => {
+        const res = await fetch(this.getApiUrl('/api/auth/login'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: this.loginEmail, password: this.loginPassword })
+        });
 
-      const data = await res.json();
-      if (!res.ok) {
-        this.loginError = data.error || 'Invalid credentials.';
-        this.isLoggingIn = false;
-        return;
-      }
+        const data = await res.json();
+        if (!res.ok) {
+          this.loginError = data.error || 'Invalid credentials.';
+          return;
+        }
 
-      this.token.set(data.token);
-      this.currentUser.set(data.user);
-      sessionStorage.setItem('codetracker_token', data.token);
-      sessionStorage.setItem('codetracker_user', JSON.stringify(data.user));
+        this.token.set(data.token);
+        this.currentUser.set(data.user);
+        sessionStorage.setItem('codetracker_token', data.token);
+        sessionStorage.setItem('codetracker_user', JSON.stringify(data.user));
 
-      this.loginEmail = '';
-      this.loginPassword = '';
-      this.onUserLoggedIn(data.user);
+        this.loginEmail = '';
+        this.loginPassword = '';
+        await this.onUserLoggedInAsync(data.user);
+      }, 30);
     } catch (e) {
-      this.loginError = 'Unable to connect to the authentication server.';
+      if (!this.loginError) {
+        this.loginError = 'Unable to connect to the authentication server.';
+      }
     } finally {
       this.isLoggingIn = false;
     }
   }
 
-  onUserLoggedIn(user: User) {
+  async onUserLoggedInAsync(user: User) {
     if (user.role === 'SUPER_ADMIN') {
-      this.fetchDepartments();
+      await this.fetchDepartments();
       this.viewMode.set('admin-departments');
     } else {
       this.activeDepartmentId.set(user.departmentId);
       this.activeDepartmentName.set(user.departmentName || 'My Department');
-      this.fetchLeaderboard();
+      await this.fetchLeaderboard();
       this.viewMode.set('academic-structure');
     }
   }
@@ -306,10 +355,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   openDepartment(dept: Department) {
-    this.activeDepartmentId.set(dept.id);
-    this.activeDepartmentName.set(dept.name);
-    this.fetchLeaderboard();
-    this.viewMode.set('academic-structure');
+    this.runWithLoader(async () => {
+      this.activeDepartmentId.set(dept.id);
+      this.activeDepartmentName.set(dept.name);
+      await this.fetchLeaderboard();
+      this.viewMode.set('academic-structure');
+    }, 40);
   }
 
   openAddDepartmentModal() {
@@ -586,17 +637,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   enterDashboard(year: number, section: string | null) {
-    this.isEnteringDashboard.set(true);
-    setTimeout(() => {
+    this.runWithLoader(async () => {
       this.selectedYear.set(year);
       this.selectedSection.set(section);
       this.viewMode.set('dashboard');
-      this.isEnteringDashboard.set(false);
 
       // Auto pre-fill Add Student form
       this.newStudent.year = year;
       this.newStudent.section = section || 'A';
-    }, 500);
+      await this.fetchLeaderboard();
+    }, 45);
   }
 
   goBackToAcademicStructure() {
@@ -606,10 +656,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   goBackToDepartments() {
-    this.viewMode.set('admin-departments');
-    this.activeDepartmentId.set(null);
-    this.activeDepartmentName.set('');
-    this.fetchDepartments();
+    this.runWithLoader(async () => {
+      this.viewMode.set('admin-departments');
+      this.activeDepartmentId.set(null);
+      this.activeDepartmentName.set('');
+      await this.fetchDepartments();
+    }, 35);
   }
 
   // ─── Filter & Sort ────────────────────────────────────────

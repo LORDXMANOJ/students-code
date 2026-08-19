@@ -1,7 +1,41 @@
-<!-- Loading Overlay -->
-<div class="loading-overlay" *ngIf="isEnteringDashboard()">
-  <div class="spinner"></div>
-  <p>Loading {{ selectedSection() ? 'Section ' + selectedSection() : 'Students' }}...</p>
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- FULL-SCREEN MORPHING SVG WAVE LOADER                       -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="full-screen-loader-overlay" 
+     *ngIf="isAppLoading()" 
+     [class.fading-out]="isOverlayFading()">
+  
+  <div class="loader-glass-card" [class.completed]="isLoadComplete()">
+    <!-- Morphing Silhouette Container -->
+    <div class="morph-container">
+      <!-- 1. Base Layer: Original CodeTracker Logo (Top Branding Stays Visible) -->
+      <img src="loader-codetracker.png" 
+           alt="CodeTracker" 
+           class="morph-base-img" 
+           (error)="$any($event.target).src = 'assets/loader-codetracker.png'">
+
+      <!-- 2. Morph Wave Mask: Revealed Rising NIET Logo (0% to 100%) -->
+      <div class="morph-wave-wrapper" [style.height.%]="loadingProgress()">
+        <!-- Wave Rippling Edge Animation -->
+        <div class="wave-anim-strip" *ngIf="!isLoadComplete()">
+          <svg class="wave-svg wave-svg-back" viewBox="0 0 1200 120" preserveAspectRatio="none">
+            <path d="M0,0 C150,90 350,-40 500,45 C650,130 900,-10 1200,30 L1200,120 L0,120 Z"></path>
+          </svg>
+          <svg class="wave-svg wave-svg-front" viewBox="0 0 1200 120" preserveAspectRatio="none">
+            <path d="M0,30 C300,-20 550,100 700,20 C850,-60 1050,70 1200,10 L1200,120 L0,120 Z"></path>
+          </svg>
+        </div>
+
+        <!-- NIET Official Logo Revealed Inside Silhouette -->
+        <div class="morph-niet-viewport">
+          <img src="loader-niet.png" 
+               alt="NIET" 
+               class="morph-niet-img" 
+               (error)="$any($event.target).src = 'assets/loader-niet.png'">
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Progress Banner -->
