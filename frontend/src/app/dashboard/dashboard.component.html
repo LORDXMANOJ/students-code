@@ -1,39 +1,20 @@
 <!-- ══════════════════════════════════════════════════════════ -->
-<!-- FULL-SCREEN MORPHING SVG WAVE LOADER                       -->
+<!-- FULL-SCREEN LOADER OVERLAY                                 -->
 <!-- ══════════════════════════════════════════════════════════ -->
 <div class="full-screen-loader-overlay" 
      *ngIf="isAppLoading()" 
      [class.fading-out]="isOverlayFading()">
   
   <div class="loader-glass-card" [class.completed]="isLoadComplete()">
-    <!-- Morphing Silhouette Container -->
-    <div class="morph-container">
-      <!-- 1. Base Layer: Original CodeTracker Logo (Top Branding Stays Visible) -->
-      <img src="loader-codetracker.png" 
-           alt="CodeTracker" 
-           class="morph-base-img" 
-           (error)="$any($event.target).src = 'assets/loader-codetracker.png'">
-
-      <!-- 2. Morph Wave Mask: Revealed Rising NIET Logo (0% to 100%) -->
-      <div class="morph-wave-wrapper" [style.height.%]="loadingProgress()">
-        <!-- Wave Rippling Edge Animation -->
-        <div class="wave-anim-strip" *ngIf="!isLoadComplete()">
-          <svg class="wave-svg wave-svg-back" viewBox="0 0 1200 120" preserveAspectRatio="none">
-            <path d="M0,0 C150,90 350,-40 500,45 C650,130 900,-10 1200,30 L1200,120 L0,120 Z"></path>
-          </svg>
-          <svg class="wave-svg wave-svg-front" viewBox="0 0 1200 120" preserveAspectRatio="none">
-            <path d="M0,30 C300,-20 550,100 700,20 C850,-60 1050,70 1200,10 L1200,120 L0,120 Z"></path>
-          </svg>
-        </div>
-
-        <!-- NIET Official Logo Revealed Inside Silhouette -->
-        <div class="morph-niet-viewport">
-          <img src="loader-niet.png" 
-               alt="NIET" 
-               class="morph-niet-img" 
-               (error)="$any($event.target).src = 'assets/loader-niet.png'">
-        </div>
-      </div>
+    <img src="assets/loader-niet.png" 
+         alt="NIET" 
+         class="loader-niet-logo-fade"
+         [style.opacity]="isLoadComplete() ? 1 : ((loadingProgress() / 100) * 0.95 + 0.05)"
+         (error)="$any($event.target).src = 'loader-niet.png'">
+    
+    <div class="loader-text-wrapper">
+      <span>Loading</span>
+      <span class="loader-dots">{{ loadingDots() }}</span>
     </div>
   </div>
 </div>
@@ -49,8 +30,7 @@
 <div class="login-wrapper" *ngIf="viewMode() === 'login'">
   <!-- Looping Background Video (Only on Login Screen) -->
   <div class="video-bg-container">
-    <video autoplay muted loop playsinline class="login-video-bg">
-      <source src="video-bg.mp4" type="video/mp4">
+    <video autoplay muted loop playsinline class="login-video-bg" (canplaythrough)="onVideoCanPlay()">
       <source src="assets/video-bg.mp4" type="video/mp4">
     </video>
     <div class="video-overlay"></div>

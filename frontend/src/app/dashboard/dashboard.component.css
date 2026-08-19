@@ -68,88 +68,32 @@
   border-color: rgba(212, 175, 55, 0.65);
 }
 
-.morph-container {
-  position: relative;
-  width: 175px;
-  height: 220px;
+.loader-niet-logo-fade {
+  height: 75px;
+  width: auto;
+  object-fit: contain;
+  transition: opacity 0.1s linear;
+}
+
+.loader-glass-card.completed .loader-niet-logo-fade {
+  opacity: 1 !important;
+  filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.4)) drop-shadow(0 0 20px rgba(127, 1, 31, 0.5));
+}
+
+.loader-text-wrapper {
+  margin-top: 1.25rem;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text-primary);
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  width: 85px;
 }
 
-.morph-base-img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  position: relative;
-  z-index: 1;
-  filter: drop-shadow(0 4px 14px rgba(127, 1, 31, 0.12));
-}
-
-.morph-wave-wrapper {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  overflow: hidden;
-  z-index: 2;
-  mask-image: url('../../assets/loader-codetracker.png');
-  -webkit-mask-image: url('../../assets/loader-codetracker.png');
-  mask-size: contain;
-  -webkit-mask-size: contain;
-  mask-repeat: no-repeat;
-  -webkit-mask-repeat: no-repeat;
-  mask-position: bottom center;
-  -webkit-mask-position: bottom center;
-  transition: height 0.35s cubic-bezier(0.25, 1, 0.5, 1);
-}
-
-.morph-niet-viewport {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 175px;
-  height: 220px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.morph-niet-img {
-  width: 86%;
-  height: 86%;
-  object-fit: contain;
-  display: block;
-  filter: brightness(1.04) drop-shadow(0 2px 8px rgba(0, 50, 160, 0.3));
-}
-
-.wave-anim-strip {
-  position: absolute;
-  top: -14px;
-  left: 0;
-  width: 100%;
-  height: 28px;
-  overflow: hidden;
-  pointer-events: none;
-  z-index: 5;
-}
-
-.wave-svg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 200%;
-  height: 100%;
-}
-
-.wave-svg-back {
-  fill: rgba(0, 75, 180, 0.5);
-  animation: waveSlide1 2.2s linear infinite;
-}
-
-.wave-svg-front {
-  fill: rgba(245, 235, 208, 0.65);
-  animation: waveSlide2 1.6s linear infinite;
+.loader-dots {
+  display: inline-block;
+  min-width: 24px;
 }
 
 /* ══════════════════════════════════════════════════════════ */

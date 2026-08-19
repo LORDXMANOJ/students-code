@@ -178,14 +178,43 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ];
   allowedSections = ['A', 'B', 'C', 'D'];
 
-  // ─── Morphing Wave Full-Screen Loader State ───────────────
+  // ─── Loader State ───────────────
   isAppLoading = signal(false);
   loadingProgress = signal(0);
   isLoadComplete = signal(false);
   isOverlayFading = signal(false);
+  loadingDots = signal('');
+
+  // Video State
+  isVideoReady = signal(false);
 
   private readonly MIN_LOADER_TIME = 2500; // 2.5 seconds minimum visible branding animation
   private readonly HOLD_TIME_COMPLETED = 700; // 600–800ms hold with wine-red/gold glow
+
+  onVideoCanPlay() {
+    this.isVideoReady.set(true);
+  }
+
+  waitForVideo(): Promise<void> {
+    return new Promise(resolve => {
+      if (this.isVideoReady()) {
+        resolve();
+        return;
+      }
+      const checkInterval = setInterval(() => {
+        if (this.isVideoReady() || this.viewMode() !== 'login') {
+          clearInterval(checkInterval);
+          resolve();
+        }
+      }, 100);
+      
+      // Fallback in case video fails to load or event is missed
+      setTimeout(() => {
+        clearInterval(checkInterval);
+        resolve();
+      }, 4000); 
+    });
+  }
 
   async runWithLoader<T>(task: () => Promise<T>, initialProgress = 20): Promise<T | void> {
     const startTime = performance.now();
@@ -201,9 +230,20 @@ export class DashboardComponent implements OnInit, OnDestroy {
       }
     }, 80);
 
+    const dotsTimer = setInterval(() => {
+      const dots = this.loadingDots();
+      this.loadingDots.set(dots.length >= 3 ? '' : dots + '.');
+    }, 400);
+
     try {
       const result = await task();
+
+      if (this.viewMode() === 'login') {
+        await this.waitForVideo();
+      }
+
       clearInterval(progressTimer);
+      clearInterval(dotsTimer);
 
       const elapsed = performance.now() - startTime;
       if (elapsed < this.MIN_LOADER_TIME) {
@@ -234,6 +274,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       return result;
     } catch (err) {
       clearInterval(progressTimer);
+      clearInterval(dotsTimer);
       this.isAppLoading.set(false);
       this.isOverlayFading.set(false);
       this.isLoadComplete.set(false);
