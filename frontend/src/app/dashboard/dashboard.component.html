@@ -430,6 +430,7 @@
 
     <div class="academic-center-box">
       <div class="academic-title-group">
+        <img src="college-logo.png" alt="Nehru Institute of Engineering and Technology" class="academic-college-logo" (error)="$any($event.target).src = 'assets/college-logo.png'">
         <h1 class="dept-heading">{{ activeDepartmentName() }}</h1>
         <p class="dept-subheading">Academic Structure</p>
       </div>
