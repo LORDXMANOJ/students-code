@@ -71,15 +71,54 @@
   align-items: center;
 }
 
-.login-logo {
+.login-branding-header {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
+  text-align: center;
   margin-bottom: 1.5rem;
+  width: 100%;
+}
+
+.login-niet-logo {
+  height: 62px;
+  width: auto;
+  max-width: 220px;
+  object-fit: contain;
+  margin-bottom: 0.5rem;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.1));
+}
+
+.login-inst-name {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--color-wine-red);
+  margin: 0 0 0.25rem;
+  letter-spacing: -0.2px;
+  line-height: 1.3;
+}
+
+.login-portal-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-wine-red);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  background: rgba(127, 1, 31, 0.08);
+  border: 1px solid rgba(127, 1, 31, 0.15);
+  padding: 0.2rem 0.75rem;
+  border-radius: 20px;
+}
+
+.login-brand-divider {
+  width: 80px;
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent, rgba(127, 1, 31, 0.35), transparent);
+  margin: 0.85rem 0 0.65rem;
 }
 
 .login-logo-img {
-  max-width: 320px;
+  max-width: 260px;
   width: 100%;
   height: auto;
   object-fit: contain;
@@ -88,19 +127,20 @@
 
 .login-header {
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1.75rem;
 }
 
-.login-header h2 {
-  font-size: 1.5rem;
+.login-header h3 {
+  font-size: 1.35rem;
   font-weight: 700;
   color: var(--text-primary);
-  margin-bottom: 0.25rem;
+  margin: 0 0 0.25rem;
 }
 
 .login-header p {
   color: var(--text-secondary);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+  margin: 0;
 }
 
 .login-form {
@@ -257,23 +297,138 @@
   gap: 2.5rem;
 }
 
-.portal-logo {
+.portal-brand-block {
   display: flex;
   align-items: center;
+  gap: 0.85rem;
   cursor: pointer;
   padding: 2px 0;
   transition: transform 0.2s ease;
 }
 
-.portal-logo:hover {
-  transform: scale(1.02);
+.portal-brand-block:hover {
+  transform: scale(1.015);
+}
+
+.nav-niet-logo {
+  height: 40px;
+  width: auto;
+  max-width: 130px;
+  object-fit: contain;
+  display: block;
+}
+
+.nav-brand-divider {
+  width: 1.5px;
+  height: 32px;
+  background: rgba(127, 1, 31, 0.2);
+  border-radius: 1px;
+}
+
+.nav-brand-text-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
 
 .portal-logo-img {
-  height: 42px;
-  max-width: 190px;
+  height: 28px;
+  max-width: 155px;
   object-fit: contain;
   display: block;
+}
+
+.portal-tag-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--color-wine-red);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+/* ══════════════════════════════════════════════════════════ */
+/* HERO BANNER BENEATH NAVIGATION                             */
+/* ══════════════════════════════════════════════════════════ */
+.portal-hero-banner {
+  background: linear-gradient(135deg, #7F011F 0%, #5B0016 100%);
+  border: 1px solid rgba(245, 235, 208, 0.25);
+  border-radius: 18px;
+  padding: 1.15rem 1.75rem;
+  box-shadow: 0 10px 25px rgba(127, 1, 31, 0.22);
+  color: #F5EBD0;
+  animation: fadeUp 300ms ease-out backwards;
+}
+
+.hero-banner-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.hero-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 1.15rem;
+}
+
+.hero-niet-crest {
+  height: 48px;
+  width: auto;
+  max-width: 140px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
+}
+
+.hero-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hero-inst-name {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin: 0;
+  letter-spacing: -0.3px;
+  line-height: 1.25;
+}
+
+.hero-portal-desc {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #F5EBD0;
+  margin: 0;
+  opacity: 0.92;
+  letter-spacing: 0.3px;
+}
+
+.hero-tagline-capsule {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  background: rgba(245, 235, 208, 0.12);
+  border: 1px solid rgba(245, 235, 208, 0.35);
+  padding: 0.45rem 1.25rem;
+  border-radius: 999px;
+  color: #F5EBD0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  backdrop-filter: blur(4px);
+}
+
+.hero-tag-text {
+  color: #FFFFFF;
+}
+
+.hero-tag-dot {
+  color: #F5EBD0;
+  opacity: 0.6;
 }
 
 .nav-links {
@@ -727,7 +882,7 @@
   padding: 1rem 0;
 }
 
-.academic-title-group {
+.academic-hero-header {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -736,12 +891,12 @@
 }
 
 .academic-college-logo {
-  height: 85px;
+  height: 80px;
   width: auto;
-  max-width: 300px;
+  max-width: 260px;
   object-fit: contain;
-  margin-bottom: 1.25rem;
-  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.07));
+  margin-bottom: 1rem;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.08));
   transition: transform 0.25s ease;
 }
 
@@ -749,17 +904,47 @@
   transform: scale(1.03);
 }
 
+.academic-inst-badge {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: rgba(127, 1, 31, 0.85);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 0.35rem;
+}
+
 .dept-heading {
-  font-size: 2.25rem;
+  font-size: 2.5rem;
   font-weight: 800;
   color: var(--color-wine-red);
-  margin-bottom: 0.25rem;
+  margin: 0 0 0.35rem;
+  letter-spacing: -0.5px;
 }
 
 .dept-subheading {
   font-size: 1.15rem;
   font-weight: 600;
   color: var(--text-secondary);
+  margin: 0 0 0.85rem;
+}
+
+.dept-tagline-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-wine-red);
+  background: rgba(127, 1, 31, 0.07);
+  border: 1px solid rgba(127, 1, 31, 0.15);
+  padding: 0.3rem 1.1rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+}
+
+.dept-tagline-bar .sep {
+  opacity: 0.5;
 }
 
 .academic-structure-card {
@@ -875,6 +1060,68 @@
   flex-direction: column;
   gap: 1.5rem;
   animation: fadeUp 300ms ease-out backwards;
+}
+
+.dashboard-dept-hero {
+  background: var(--color-rose-white);
+  border: 1px solid var(--border-subtle);
+  border-radius: 20px;
+  padding: 1.75rem 2rem;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.dept-hero-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.inst-eyebrow {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: rgba(127, 1, 31, 0.82);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 0.35rem;
+}
+
+.dept-hero-heading {
+  font-size: 2.4rem;
+  font-weight: 800;
+  color: var(--color-wine-red);
+  margin: 0 0 0.35rem;
+  letter-spacing: -0.5px;
+}
+
+.dept-hero-sub {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0 0 0.85rem;
+}
+
+.dept-hero-tagline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-wine-red);
+  background: rgba(127, 1, 31, 0.07);
+  border: 1px solid rgba(127, 1, 31, 0.15);
+  padding: 0.3rem 1.1rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+}
+
+.dept-hero-tagline .sep {
+  opacity: 0.5;
 }
 
 .dashboard-location-header {

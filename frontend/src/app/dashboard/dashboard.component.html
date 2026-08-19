@@ -23,12 +23,18 @@
   </div>
 
   <div class="login-card">
-    <div class="login-logo">
+    <div class="login-branding-header">
+      <img src="college-logo.png" alt="Nehru Institute of Engineering and Technology" class="login-niet-logo" (error)="$any($event.target).src = 'assets/college-logo.png'">
+      <h2 class="login-inst-name">Nehru Institute of Engineering and Technology</h2>
+      <span class="login-portal-tag">Official Coding Portal</span>
+      
+      <div class="login-brand-divider"></div>
+      
       <img src="logo.png" alt="CodeTracker" class="login-logo-img" (error)="$any($event.target).src = 'assets/logo.png'">
     </div>
     
     <div class="login-header">
-      <h2>Welcome Back</h2>
+      <h3>Welcome Back</h3>
       <p>Sign in to access your college portal</p>
     </div>
 
@@ -90,8 +96,13 @@
 
   <header class="top-nav-bar">
     <div class="nav-left">
-      <div class="portal-logo" (click)="currentUser()?.role === 'SUPER_ADMIN' ? (viewMode.set('admin-departments')) : (viewMode.set('academic-structure'))">
-        <img src="logo.png" alt="CodeTracker" class="portal-logo-img" (error)="$any($event.target).src = 'assets/logo.png'">
+      <div class="portal-brand-block" (click)="currentUser()?.role === 'SUPER_ADMIN' ? (viewMode.set('admin-departments')) : (viewMode.set('academic-structure'))">
+        <img src="college-logo.png" alt="NIET" class="nav-niet-logo" (error)="$any($event.target).src = 'assets/college-logo.png'">
+        <div class="nav-brand-divider"></div>
+        <div class="nav-brand-text-col">
+          <img src="logo.png" alt="CodeTracker" class="portal-logo-img" (error)="$any($event.target).src = 'assets/logo.png'">
+          <span class="portal-tag-badge">Official Coding Portal</span>
+        </div>
       </div>
 
       <!-- Navigation Tabs -->
@@ -136,6 +147,26 @@
       </button>
     </div>
   </header>
+
+  <!-- Premium Hero Banner beneath Navigation Bar -->
+  <div class="portal-hero-banner">
+    <div class="hero-banner-inner">
+      <div class="hero-banner-left">
+        <img src="college-logo.png" alt="NIET Logo" class="hero-niet-crest" (error)="$any($event.target).src = 'assets/college-logo.png'">
+        <div class="hero-banner-text">
+          <h2 class="hero-inst-name">Nehru Institute of Engineering and Technology</h2>
+          <p class="hero-portal-desc">Official Competitive Programming Portal</p>
+        </div>
+      </div>
+      <div class="hero-tagline-capsule">
+        <span class="hero-tag-text">Track</span>
+        <span class="hero-tag-dot">•</span>
+        <span class="hero-tag-text">Code</span>
+        <span class="hero-tag-dot">•</span>
+        <span class="hero-tag-text">Grow</span>
+      </div>
+    </div>
+  </div>
 
   <!-- ════════════════════════════════════════════════════════ -->
   <!-- 2. ADMIN DEPARTMENTS OVERVIEW                            -->
@@ -429,10 +460,18 @@
     </div>
 
     <div class="academic-center-box">
-      <div class="academic-title-group">
+      <div class="academic-hero-header">
         <img src="college-logo.png" alt="Nehru Institute of Engineering and Technology" class="academic-college-logo" (error)="$any($event.target).src = 'assets/college-logo.png'">
+        <span class="academic-inst-badge">Nehru Institute of Engineering and Technology</span>
         <h1 class="dept-heading">{{ activeDepartmentName() }}</h1>
-        <p class="dept-subheading">Academic Structure</p>
+        <p class="dept-subheading">Academic Performance Dashboard</p>
+        <div class="dept-tagline-bar">
+          <span>Track</span>
+          <span class="sep">•</span>
+          <span>Code</span>
+          <span class="sep">•</span>
+          <span>Grow</span>
+        </div>
       </div>
 
       <div class="academic-structure-card">
@@ -473,6 +512,22 @@
   <!-- ════════════════════════════════════════════════════════ -->
   <div class="dashboard-content" *ngIf="viewMode() === 'dashboard' && !isEnteringDashboard()">
     
+    <!-- Department Hero Header -->
+    <div class="dashboard-dept-hero">
+      <div class="dept-hero-content">
+        <span class="inst-eyebrow">Nehru Institute of Engineering and Technology</span>
+        <h1 class="dept-hero-heading">{{ activeDepartmentName() }}</h1>
+        <p class="dept-hero-sub">Academic Performance Dashboard</p>
+        <div class="dept-hero-tagline">
+          <span>Track</span>
+          <span class="sep">•</span>
+          <span>Code</span>
+          <span class="sep">•</span>
+          <span>Grow</span>
+        </div>
+      </div>
+    </div>
+
     <!-- Top Controls: Back button & Search & Location Header -->
     <div class="dashboard-location-header">
       <button class="secondary-btn back-btn-custom" (click)="goBackToAcademicStructure()">
