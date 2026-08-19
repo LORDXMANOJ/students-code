@@ -202,7 +202,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
         return;
       }
       const checkInterval = setInterval(() => {
-        if (this.isVideoReady() || this.viewMode() !== 'login') {
+        const videoElement = document.querySelector('video.login-video-bg') as HTMLVideoElement;
+        if (this.isVideoReady() || (videoElement && videoElement.readyState >= 3) || this.viewMode() !== 'login') {
           clearInterval(checkInterval);
           resolve();
         }
