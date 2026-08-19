@@ -184,7 +184,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
   isLoadComplete = signal(false);
   isOverlayFading = signal(false);
 
-  async runWithLoader<T>(task: () => Promise<T>, initialProgress = 25): Promise<T | void> {
+  private readonly MIN_LOADER_TIME = 2500; // 2.5 seconds minimum visible branding animation
+  private readonly HOLD_TIME_COMPLETED = 700; // 600–800ms hold with wine-red/gold glow
+
+  async runWithLoader<T>(task: () => Promise<T>, initialProgress = 20): Promise<T | void> {
+    const startTime = performance.now();
     this.isAppLoading.set(true);
     this.isLoadComplete.set(false);
     this.isOverlayFading.set(false);
@@ -192,18 +196,35 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     const progressTimer = setInterval(() => {
       const cur = this.loadingProgress();
-      if (cur < 92) {
-        this.loadingProgress.set(cur + Math.floor(Math.random() * 8) + 4);
+      if (cur < 90) {
+        this.loadingProgress.set(cur + Math.floor(Math.random() * 5) + 3);
       }
-    }, 90);
+    }, 80);
 
     try {
       const result = await task();
+      clearInterval(progressTimer);
+
+      const elapsed = performance.now() - startTime;
+      if (elapsed < this.MIN_LOADER_TIME) {
+        const remaining = this.MIN_LOADER_TIME - elapsed;
+        const steps = 10;
+        const stepTime = remaining / steps;
+        const startPct = this.loadingProgress();
+        for (let i = 1; i <= steps; i++) {
+          await new Promise(resolve => setTimeout(resolve, stepTime));
+          this.loadingProgress.set(Math.min(98, Math.round(startPct + ((100 - startPct) * (i / steps)))));
+        }
+      }
+
+      // Reach 100% and trigger completed glow
       this.loadingProgress.set(100);
       this.isLoadComplete.set(true);
-      
-      // Hold for 500ms upon 100% completion, then smoothly fade out
-      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Hold fully filled NIET logo for 700ms with wine-red & gold glow
+      await new Promise(resolve => setTimeout(resolve, this.HOLD_TIME_COMPLETED));
+
+      // Fade out smoothly
       this.isOverlayFading.set(true);
       await new Promise(resolve => setTimeout(resolve, 450));
       this.isAppLoading.set(false);
@@ -212,13 +233,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.loadingProgress.set(0);
       return result;
     } catch (err) {
+      clearInterval(progressTimer);
       this.isAppLoading.set(false);
       this.isOverlayFading.set(false);
       this.isLoadComplete.set(false);
       this.loadingProgress.set(0);
       throw err;
-    } finally {
-      clearInterval(progressTimer);
     }
   }
 
